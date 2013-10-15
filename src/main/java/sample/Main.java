@@ -27,18 +27,14 @@ public class Main {
     // get hold of the actor system
     ActorSystem system = ctx.getBean(ActorSystem.class);
     // use the Spring Extension to create props for a named actor bean
-    ActorRef counter = system.actorOf(
-      SpringExtProvider.get(system).props("CountingActor"), "counter");
+    ActorRef searcher = system.actorOf(
+      SpringExtProvider.get(system).props("SearchingActor"), "s1");
 
-    // tell it to count three times
-    counter.tell(new Count(), null);
-    counter.tell(new Count(), null);
-    counter.tell(new Count(), null);
+
 
     // print the result
     FiniteDuration duration = FiniteDuration.create(3, TimeUnit.SECONDS);
-    Future<Object> result = ask(counter, new Get(),
-      Timeout.durationToTimeout(duration));
+    Future<Object> result = ask(searcher, new SearchingActor.Search("akka"), Timeout.durationToTimeout(duration));
     try {
       System.out.println("Got back " + Await.result(result, duration));
     } catch (Exception e) {

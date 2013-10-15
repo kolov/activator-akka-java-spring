@@ -9,6 +9,7 @@ libraryDependencies ++= Seq(
   "org.springframework" % "spring-context" % "3.2.2.RELEASE",
   "javax.inject" % "javax.inject" % "1",
   "junit" % "junit" % "4.11" % "test",
+  "commons-httpclient" % "commons-httpclient" % "3.1",
   "com.novocode" % "junit-interface" % "0.9" % "test->default"
 )
 
