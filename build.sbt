@@ -10,6 +10,7 @@ libraryDependencies ++= Seq(
   "javax.inject" % "javax.inject" % "1",
   "junit" % "junit" % "4.11" % "test",
   "commons-httpclient" % "commons-httpclient" % "3.1",
+  "io.netty" % "netty" % "3.6.0.Final",
   "com.novocode" % "junit-interface" % "0.9" % "test->default"
 )
 

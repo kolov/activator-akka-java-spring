@@ -1,10 +1,24 @@
 package sample;
 
+import akka.actor.ActorRef;
+import akka.actor.ActorSystem;
 import akka.actor.UntypedActor;
+
+import static akka.pattern.Patterns.ask;
+
+import akka.util.Timeout;
 import org.springframework.context.annotation.Scope;
+import scala.concurrent.Await;
+import scala.concurrent.Future;
+import scala.concurrent.duration.FiniteDuration;
 
 import javax.inject.Inject;
 import javax.inject.Named;
+import java.net.URLEncoder;
+import java.util.concurrent.TimeUnit;
+
+import static akka.pattern.Patterns.ask;
+import static sample.SpringExtension.SpringExtProvider;
 
 /**
  * An actor that can count using an injected CountingService.
@@ -15,6 +29,14 @@ import javax.inject.Named;
 @Named("SearchingActor")
 @Scope("prototype")
 class SearchingActor extends UntypedActor {
+
+    String address = "ajax.googleapis.com";
+    String pathPrefix = "/ajax/services/search/web?v=1.0&q=";
+    String charset = "UTF-8";
+
+
+    @Inject
+    private ActorSystem system;
 
     public static class Search {
         public Search(String query) {
@@ -28,7 +50,7 @@ class SearchingActor extends UntypedActor {
         private String query;
     }
 
-  public static class SearchResult {
+    public static class SearchResult {
         public SearchResult(String result) {
             this.result = result;
         }
@@ -39,13 +61,13 @@ class SearchingActor extends UntypedActor {
 
         private String result;
 
-      @Override
-      public String toString() {
-          return "SearchResult{" +
-                  "result='" + result + '\'' +
-                  '}';
-      }
-  }
+        @Override
+        public String toString() {
+            return "SearchResult{" +
+                    "result='" + result + '\'' +
+                    '}';
+        }
+    }
 
 
     // the service that will be automatically injected
@@ -56,13 +78,30 @@ class SearchingActor extends UntypedActor {
         this.searchingService = searchingService;
     }
 
-    private int count = 0;
+    FiniteDuration duration = FiniteDuration.create(3, TimeUnit.SECONDS);
 
     @Override
     public void onReceive(Object message) throws Exception {
         if (message instanceof Search) {
-            String result = searchingService.search(((Search) message).getQuery());
-            getSender().tell(new SearchResult(result), getSelf());
+
+            String q = ((Search) message).getQuery();
+
+            String path = pathPrefix + URLEncoder.encode(q, charset);
+
+            ActorRef actorRef = system.actorOf(
+                    SpringExtProvider.get(system).props("HttpActor"), "http1");
+
+            Future<Object> result = ask(actorRef, new HttpActor.Get(address, path), Timeout.durationToTimeout(duration));
+
+            try {
+                HttpActor.Response x = (HttpActor.Response) Await.result(result, duration);
+                getSender().tell(new SearchResult(x.getBody()), getSelf());
+            } catch (Exception e) {
+                System.err.println("Failed getting result: " + e.getMessage());
+                throw e;
+            }
+
+
         } else {
             unhandled(message);
         }
