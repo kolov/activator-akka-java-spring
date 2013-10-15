@@ -28,6 +28,25 @@ class SearchingActor extends UntypedActor {
         private String query;
     }
 
+  public static class SearchResult {
+        public SearchResult(String result) {
+            this.result = result;
+        }
+
+        public String getResult() {
+            return result;
+        }
+
+        private String result;
+
+      @Override
+      public String toString() {
+          return "SearchResult{" +
+                  "result='" + result + '\'' +
+                  '}';
+      }
+  }
+
 
     // the service that will be automatically injected
     final SearchingService searchingService;
@@ -42,8 +61,8 @@ class SearchingActor extends UntypedActor {
     @Override
     public void onReceive(Object message) throws Exception {
         if (message instanceof Search) {
-            String searchResult = searchingService.search(((Search) message).getQuery());
-            getSender().tell(searchResult, getSelf());
+            String result = searchingService.search(((Search) message).getQuery());
+            getSender().tell(new SearchResult(result), getSelf());
         } else {
             unhandled(message);
         }
